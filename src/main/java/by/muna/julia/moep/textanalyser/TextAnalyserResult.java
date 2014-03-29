@@ -2,7 +2,6 @@ package by.muna.julia.moep.textanalyser;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 public interface TextAnalyserResult {
     int getWordsCount();

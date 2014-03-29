@@ -43,12 +43,6 @@ public class TextAnalyser {
     }
 
     public TextAnalyserResult analyseText(Reader reader) throws IOException {
-        /*char[] buffer = new char[512];
-
-        int readed = reader.read(buffer);
-
-        System.out.println(new String(buffer));*/
-
         int sentensesCount = 0,
             paragraphsCount = 0;
 
@@ -178,9 +172,10 @@ public class TextAnalyser {
 
             private Queue<Token> nextTokens = new LinkedList<>();
             private boolean haveAnyWords = false;
-            private boolean sentenseClosed = false;
+            private boolean sentenseClosed = true;
             private boolean eofTokensAdded = false;
 
+            // Возвращает текущий символ не переходя к следующему
             private char peekNextChar() throws IOException {
                 if (this.offset >= this.charsReaded) {
                     this.charsReaded = reader.read(this.buffer);
@@ -188,13 +183,7 @@ public class TextAnalyser {
 
                 return this.charsReaded != -1 ? this.buffer[this.offset] : 0;
             }
-            private char pollNextChar() throws IOException {
-                char c = this.peekNextChar();
-
-                this.offset++;
-
-                return c;
-            }
+            // Переходит к следующему символу
             private void skipChar() throws IOException {
                 this.offset++;
             }
@@ -212,7 +201,7 @@ public class TextAnalyser {
                     (c == '_');
             }
 
-            // returns true if skipped \n
+            // Возвращает множество с элементами что пропустили (знаки конца предложения/новая строка)
             private EnumSet<SkippedType> skipNonLetters() throws IOException {
                 EnumSet<SkippedType> result = EnumSet.noneOf(SkippedType.class);
 
@@ -240,6 +229,7 @@ public class TextAnalyser {
                 return result;
             }
             private boolean makeNextTokens() throws IOException {
+                // Пропускаем пустые символы
                 EnumSet<SkippedType> skipped = this.skipNonLetters();
 
                 boolean closeSentense = false;
@@ -249,6 +239,11 @@ public class TextAnalyser {
                     this.nextTokens.add(new SentenseEndToken());
                 }
                 if (skipped.contains(SkippedType.NEWLINE) && !this.sentenseClosed) {
+                    // Если до этого не было знака конца предложения,
+                    // будем считать что предложение закончили, а знак забыли.
+                    // Если такая функциональность не нужна -- нужно в этом if'е сделать return,
+                    // тогда не закрытое предложение не будет заканчивать абзац даже если
+                    // в нём есть переносы строк
                     if (!closeSentense) this.nextTokens.add(new SentenseEndToken());
 
                     closeSentense = true;
@@ -266,12 +261,15 @@ public class TextAnalyser {
                     this.eofTokensAdded = true;
 
                     if (this.haveAnyWords) {
+                        // Закрываем предложение, если в конце файла не хватает знака конца предложения
                         if (!this.sentenseClosed) {
                             this.nextTokens.add(new SentenseEndToken());
                         }
 
                         this.nextTokens.add(new ParagraphEndToken());
                     } else {
+                        // Если в файле не было никаких слов, то очевидно,
+                        // что не нужно закрывать абзац.
                         return false;
                     }
                 } else {

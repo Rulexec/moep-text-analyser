@@ -94,4 +94,14 @@ public class BasicTests {
 
         Assert.assertEquals(0, actualRelativeOccurrences.size());
     }
+
+    @Test
+    public void dotsTest() {
+        String text = "First... .. .. Second..\nPrelasts sentense.\nLast....";
+
+        TextAnalyserResult result = new TextAnalyser().analyseText(text);
+
+        Assert.assertEquals(3, result.getParagraphsCount());
+        Assert.assertEquals(4, result.getSentensesCount());
+    }
 }
